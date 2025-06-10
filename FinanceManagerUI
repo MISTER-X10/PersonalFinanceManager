@@ -1,0 +1,113 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.ResultSet;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class FinanceManagerUI extends JFrame {
+    private DatabaseManager dbManager;
+    private JTextField typeField, categoryField, amountField, dateField, descriptionField;
+    private JTextArea displayArea;
+
+    public FinanceManagerUI(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
+        setTitle("Personal Finance Manager");
+        setSize(500, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        initializeComponents();
+        setVisible(true);
+    }
+
+    private void initializeComponents() {
+        JPanel inputPanel = new JPanel(new GridLayout(6, 2, 5, 5));
+        inputPanel.setBorder(BorderFactory.createTitledBorder("Add Transaction"));
+
+        inputPanel.add(new JLabel("Type (income/expense):"));
+        typeField = new JTextField();
+        inputPanel.add(typeField);
+
+        inputPanel.add(new JLabel("Category:"));
+        categoryField = new JTextField();
+        inputPanel.add(categoryField);
+
+        inputPanel.add(new JLabel("Amount:"));
+        amountField = new JTextField();
+        inputPanel.add(amountField);
+
+        inputPanel.add(new JLabel("Date (yyyy-MM-dd):"));
+        dateField = new JTextField();
+        inputPanel.add(dateField);
+
+        inputPanel.add(new JLabel("Description:"));
+        descriptionField = new JTextField();
+        inputPanel.add(descriptionField);
+
+        JButton addButton = new JButton("Add Transaction");
+        inputPanel.add(addButton);
+        inputPanel.add(new JLabel("")); // Empty for layout
+
+        addButton.addActionListener(e -> addTransaction());
+
+        JPanel displayPanel = new JPanel();
+        displayPanel.setBorder(BorderFactory.createTitledBorder("Transaction History"));
+        displayArea = new JTextArea(15, 40);
+        displayArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(displayArea);
+        displayPanel.add(scrollPane);
+
+        JButton refreshButton = new JButton("Refresh Transactions");
+        refreshButton.addActionListener(e -> loadTransactions());
+        displayPanel.add(refreshButton);
+
+        add(inputPanel, BorderLayout.NORTH);
+        add(displayPanel, BorderLayout.CENTER);
+    }
+
+    private void addTransaction() {
+        try {
+            String type = typeField.getText().trim().toLowerCase();
+            String category = categoryField.getText().trim();
+            double amount = Double.parseDouble(amountField.getText().trim());
+            Date date = new SimpleDateFormat("yyyy-MM-dd").parse(dateField.getText().trim());
+            String description = descriptionField.getText().trim();
+
+            if (!type.equals("income") && !type.equals("expense")) {
+                JOptionPane.showMessageDialog(this, "Type must be 'income' or 'expense'");
+                return;
+            }
+
+            Transaction trans = new Transaction(type, category, amount, date, description);
+            if (dbManager.addTransaction(trans)) {
+                JOptionPane.showMessageDialog(this, "Transaction added successfully");
+                clearInputs();
+            }
+        } catch (NumberFormatException | ParseException e) {
+            JOptionPane.showMessageDialog(this, "Invalid input: " + e.getMessage());
+        }
+    }
+
+    private void clearInputs() {
+        typeField.setText("");
+        categoryField.setText("");
+        amountField.setText("");
+        dateField.setText("");
+        descriptionField.setText("");
+    }
+
+    private void loadTransactions() {
+        displayArea.setText("");
+        try (ResultSet rs = dbManager.getTransactions()) {
+            while (rs.next()) {
+                displayArea.append(String.format("%s | %s | ₹%.2f | %s | %s%n",
+                        rs.getString("type"), rs.getString("category"), rs.getDouble("amount"),
+                        rs.getDate("date"), rs.getString("description")));
+            }
+        } catch (Exception e) {
+            displayArea.setText("Error loading transactions: " + e.getMessage());
+        }
+    }
+}
