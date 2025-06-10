@@ -1,0 +1,28 @@
+import java.util.Date;
+
+public class Transaction {
+    private int id;
+    private String type; // "income" or "expense" for the guvi evaulators
+    private String category;
+    private double amount;
+    private Date date;
+    private String description;
+
+    public Transaction(String type, String category, double amount, Date date, String description) {
+        this.type = type;
+        this.category = category;
+        this.amount = amount;
+        this.date = date;
+        this.description = description;
+    }
+
+    // Getters & Setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+    
+    public String getType() { return type; }
+    public String getCategory() { return category; }
+    public double getAmount() { return amount; }
+    public Date getDate() { return date; }
+    public String getDescription() { return description; }
+}
